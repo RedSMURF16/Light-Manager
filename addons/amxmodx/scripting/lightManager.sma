@@ -1689,8 +1689,6 @@ stock lightSetState(eLight[LIGHT])
 {
     if ( !(eLight[LIGHT_FLAGS] & FLAG_MODEL) )
         lightSelect(eLight, TARGET_HIDE)
-    if ( eLight[LIGHT_FLAGS] & FLAG_COLOR_RANDOM )
-        eLight[LIGHT_NEXT_RANDOM] = get_gametime() + random_float(eLight[LIGHT_COLOR_FREQUENCY][0], eLight[LIGHT_COLOR_FREQUENCY][1])
 }
 
 stock lightSetDelay(eLight[LIGHT])
@@ -1711,6 +1709,9 @@ stock lightSetDelay(eLight[LIGHT])
                 eLight[LIGHT_NEXT_DISABLE] = fCurrentTime + random_float(eLight[LIGHT_ACTIVE_DURATION][0], eLight[LIGHT_ACTIVE_DURATION][1])
         }
     }
+
+    if ( eLight[LIGHT_FLAGS] & FLAG_COLOR_RANDOM )
+        eLight[LIGHT_NEXT_RANDOM] = get_gametime() + random_float(eLight[LIGHT_COLOR_FREQUENCY][0], eLight[LIGHT_COLOR_FREQUENCY][1])
 }
 
 stock lightSelect(eLight[LIGHT], iAction)
