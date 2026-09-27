@@ -91,11 +91,13 @@ enum
 {
     FLAG_MODEL              = (1 << 0),
     FLAG_COLOR_RANDOM       = (1 << 1),
+    FLAG_ACTIVE_DELAY       = (1 << 2),
+    FLAG_ACTIVE_DURATION    = (1 << 3),
 
-    FLAG_SHOW               = (1 << 2),
-    FLAG_GHOST              = (1 << 3),
-    FLAG_LOCK               = (1 << 4),
-    FLAG_PENDING            = (1 << 5)
+    FLAG_SHOW               = (1 << 4),
+    FLAG_GHOST              = (1 << 5),
+    FLAG_LOCK               = (1 << 6),
+    FLAG_PENDING            = (1 << 7)
 }
 
 enum
@@ -119,6 +121,9 @@ enum _:MAIN_SETTINGS
     SETTING_DEFAULT_FLAGS,
 
     Float:SETTING_DEFAULT_COLOR_FREQUENCY[2],
+    Float:SETTING_DEFAULT_ACTIVE_DELAY[2],
+    Float:SETTING_DEFAULT_ACTIVE_DURATION[2],
+    Float:SETTING_DEFAULT_ACTIVE_COOLDOWN[2],
 
     bool:SETTING_LIGHT_LOAD,
     Float:SETTING_LIGHT_CHECK,
@@ -143,10 +148,15 @@ enum _:LIGHT
     Float:LIGHT_ANGLES[3],
 
     Float:LIGHT_COLOR_FREQUENCY[2],
+    Float:LIGHT_ACTIVE_DELAY[2],
+    Float:LIGHT_ACTIVE_DURATION[2],
+    Float:LIGHT_ACTIVE_COOLDOWN[2],
     LIGHT_DLIGHT_COLOR[3],
     LIGHT_DLIGHT_SCALE,
 
-    Float:LIGHT_NEXT_RANDOM
+    Float:LIGHT_NEXT_RANDOM,
+    Float:LIGHT_NEXT_ACTIVE,
+    Float:LIGHT_NEXT_INACTIVE
 }
 
 enum _:PLAYER_DATA
@@ -339,7 +349,21 @@ public cmdReload(id, iLevel, iCmd)
 
 public eventRoundStart()
 {
-    lightReset()
+    new eLight[LIGHT]
+    for ( new i = 0; i < g_iLight; i ++ )
+    {
+        ArrayGetArray(g_aLight, i, eLight)
+        lightReset(eLight)
+        if ( !(eLight[LIGHT_FLAGS] & FLAG_SHOW) )
+        {
+            ArraySetArray(g_aLight, i, eLight)
+            continue
+        }
+
+        lightSetDelay(eLight)
+        lightSetState(eLight)
+        ArraySetArray(g_aLight, i, eLight)
+    }
 }
 
 ReadFile()
@@ -399,7 +423,15 @@ ReadFile()
 
                         copy(eLight[LIGHT_NAME], charsmax(eLight[LIGHT_NAME]), szData)
                         copy(eLight[LIGHT_MODEL], charsmax(eLight[LIGHT_MODEL]), g_eSettings[SETTING_DEFAULT_MODEL])
-                        eLight[LIGHT_FLAGS]               = g_eSettings[SETTING_DEFAULT_FLAGS]
+                        eLight[LIGHT_FLAGS]                 = g_eSettings[SETTING_DEFAULT_FLAGS]
+                        eLight[LIGHT_COLOR_FREQUENCY][0]    = g_eSettings[SETTING_DEFAULT_COLOR_FREQUENCY][0]
+                        eLight[LIGHT_COLOR_FREQUENCY][1]    = g_eSettings[SETTING_DEFAULT_COLOR_FREQUENCY][1]
+                        eLight[LIGHT_ACTIVE_DELAY][0]       = g_eSettings[SETTING_DEFAULT_ACTIVE_DELAY][0]
+                        eLight[LIGHT_ACTIVE_DELAY][1]       = g_eSettings[SETTING_DEFAULT_ACTIVE_DELAY][1]
+                        eLight[LIGHT_ACTIVE_DURATION][0]    = g_eSettings[SETTING_DEFAULT_ACTIVE_DURATION][0]
+                        eLight[LIGHT_ACTIVE_DURATION][1]    = g_eSettings[SETTING_DEFAULT_ACTIVE_DURATION][1]
+                        eLight[LIGHT_ACTIVE_COOLDOWN][0]    = g_eSettings[SETTING_DEFAULT_ACTIVE_COOLDOWN][0]
+                        eLight[LIGHT_ACTIVE_COOLDOWN][1]    = g_eSettings[SETTING_DEFAULT_ACTIVE_COOLDOWN][1]
 
                         iSection = SECTION_LIGHT
                         g_iLightConfig ++
@@ -435,6 +467,12 @@ ReadFile()
                             parseSetting(DTYPE_FLAGS, szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_FLAGS], charsmax(g_eSettings[SETTING_DEFAULT_FLAGS]))
                         else if ( equali(szKey, "SETTING_DEFAULT_COLOR_FREQUENCY") )
                             parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_COLOR_FREQUENCY], charsmax(g_eSettings[SETTING_DEFAULT_COLOR_FREQUENCY]))
+                        else if ( equali(szKey, "SETTING_DEFAULT_ACTIVE_DELAY") )
+                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_ACTIVE_DELAY], charsmax(g_eSettings[SETTING_DEFAULT_ACTIVE_DELAY]))
+                        else if ( equali(szKey, "SETTING_DEFAULT_ACTIVE_DURATION") )
+                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_ACTIVE_DURATION], charsmax(g_eSettings[SETTING_DEFAULT_ACTIVE_DURATION]))
+                        else if ( equali(szKey, "SETTING_DEFAULT_ACTIVE_COOLDOWN") )
+                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_ACTIVE_COOLDOWN], charsmax(g_eSettings[SETTING_DEFAULT_ACTIVE_COOLDOWN]))
                         else if ( equali(szKey, "SETTING_LIGHT_LOAD") )
                             parseSetting(DTYPE_INT, szValue, charsmax(szValue), g_eSettings[SETTING_LIGHT_LOAD], charsmax(g_eSettings[SETTING_LIGHT_LOAD]))
                         else if ( equali(szKey, "SETTING_LIGHT_CHECK") )
@@ -462,6 +500,12 @@ ReadFile()
                             parseSetting(DTYPE_FLAGS, szValue, charsmax(szValue), eLight[LIGHT_FLAGS], charsmax(eLight[LIGHT_FLAGS]))
                         else if ( equali(szKey, "LIGHT_COLOR_FREQUENCY") )
                             parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), eLight[LIGHT_COLOR_FREQUENCY], charsmax(eLight[LIGHT_COLOR_FREQUENCY]))
+                        else if ( equali(szKey, "LIGHT_ACTIVE_DELAY") )
+                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), eLight[LIGHT_ACTIVE_DELAY], charsmax(eLight[LIGHT_ACTIVE_DELAY]))
+                        else if ( equali(szKey, "LIGHT_ACTIVE_DURATION") )
+                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), eLight[LIGHT_ACTIVE_DURATION], charsmax(eLight[LIGHT_ACTIVE_DURATION]))
+                        else if ( equali(szKey, "LIGHT_ACTIVE_COOLDOWN") )
+                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), eLight[LIGHT_ACTIVE_COOLDOWN], charsmax(eLight[LIGHT_ACTIVE_COOLDOWN]))
                     }
                 }
             }
@@ -1121,6 +1165,7 @@ public menuHandlerLight(id, menu, item)
             set_pdata_float(id, PDATA_NEXT_ATTACK, 0.0, XO_CBASEPLAYER, XO_CBASEPLAYER)
             g_ePlayerData[id][PDATA_LIGHT_GHOST] = 0
             eLight[LIGHT_FLAGS] &= ~FLAG_LOCK
+            lightSetDelay(eLight)
             lightSetState(eLight)
             ArraySetArray(g_aLight, iItem, eLight)
 
@@ -1155,7 +1200,7 @@ public menuHandlerLight(id, menu, item)
 
 public lightTask()
 {
-    new eLight[LIGHT], Float:fCurrentTime
+    new eLight[LIGHT], Float:fCurrentTime, bool:bModified
     fCurrentTime = get_gametime()
 
     for ( new i = 0; i < g_iLight; i ++ )
@@ -1166,18 +1211,47 @@ public lightTask()
         {
             lightDraw(eLight)
 
-            if ( eLight[LIGHT_NEXT_RANDOM] > 0.0
-            && fCurrentTime >= eLight[LIGHT_NEXT_RANDOM] )
+            if ( !(eLight[LIGHT_FLAGS] & FLAG_LOCK) )
             {
-                new iColor = random(sizeof(g_iLightColors))
-                eLight[LIGHT_DLIGHT_COLOR][0] = g_iLightColors[iColor][0]
-                eLight[LIGHT_DLIGHT_COLOR][1] = g_iLightColors[iColor][1]
-                eLight[LIGHT_DLIGHT_COLOR][2] = g_iLightColors[iColor][2]
-                eLight[LIGHT_NEXT_RANDOM] = fCurrentTime + random_float(eLight[LIGHT_COLOR_FREQUENCY][0], eLight[LIGHT_COLOR_FREQUENCY][1])
+                if ( eLight[LIGHT_NEXT_RANDOM] > 0.0
+                && fCurrentTime >= eLight[LIGHT_NEXT_RANDOM] )
+                {
+                    new iColor = random(sizeof(g_iLightColors))
+                    eLight[LIGHT_DLIGHT_COLOR][0] = g_iLightColors[iColor][0]
+                    eLight[LIGHT_DLIGHT_COLOR][1] = g_iLightColors[iColor][1]
+                    eLight[LIGHT_DLIGHT_COLOR][2] = g_iLightColors[iColor][2]
+                    eLight[LIGHT_NEXT_RANDOM] = fCurrentTime + random_float(eLight[LIGHT_COLOR_FREQUENCY][0], eLight[LIGHT_COLOR_FREQUENCY][1])
 
-                ArraySetArray(g_aLight, i, eLight)
+                    bModified = true
+                }
+
+                if ( eLight[LIGHT_NEXT_INACTIVE] > 0.0
+                && fCurrentTime >= eLight[LIGHT_NEXT_INACTIVE] )
+                {
+                    eLight[LIGHT_FLAGS] &= ~FLAG_SHOW
+                    eLight[LIGHT_FLAGS] |= FLAG_PENDING
+                    if ( eLight[LIGHT_FLAGS] & FLAG_ACTIVE_DURATION )
+                        eLight[LIGHT_NEXT_ACTIVE] = fCurrentTime + random_float(eLight[LIGHT_ACTIVE_COOLDOWN][0], eLight[LIGHT_ACTIVE_COOLDOWN][1])
+
+                    bModified = true
+                }
             }
         }
+        else
+        {
+            if ( eLight[LIGHT_NEXT_ACTIVE] > 0.0
+            && fCurrentTime >= eLight[LIGHT_NEXT_ACTIVE] )
+            {
+                eLight[LIGHT_FLAGS] |= FLAG_SHOW
+                eLight[LIGHT_FLAGS] &= ~FLAG_PENDING
+                eLight[LIGHT_NEXT_INACTIVE] = fCurrentTime + random_float(eLight[LIGHT_ACTIVE_DURATION][0], eLight[LIGHT_ACTIVE_DURATION][1])
+
+                bModified = true
+            }
+        }
+
+        if ( bModified )
+            ArraySetArray(g_aLight, i, eLight)
     }
 }
 
@@ -1385,6 +1459,7 @@ stock loadDataLight(iItem, iFlags, iScale, iColor[3], Float:fOrigin[3], Float:fA
     eLight[LIGHT_DLIGHT_COLOR][2] = iColor[2]
 
     lightSetSize(eLight)
+    lightSetDelay(eLight)
     lightSetState(eLight)
     ArraySetArray(g_aLight, iCount, eLight)
 }
@@ -1560,6 +1635,23 @@ stock lightSetSize(eLight[LIGHT])
     set_pev(eLight[LIGHT_ID], pev_movetype, MOVETYPE_NONE)
 }
 
+stock lightSetDelay(eLight[LIGHT])
+{
+    if ( eLight[LIGHT_FLAGS] & FLAG_SHOW )
+    {
+        if ( eLight[LIGHT_FLAGS] & FLAG_ACTIVE_DELAY )
+        {
+            eLight[LIGHT_FLAGS] &= ~FLAG_SHOW
+            eLight[LIGHT_NEXT_ACTIVE] = get_gametime() + random_float(eLight[LIGHT_ACTIVE_DELAY][0], eLight[LIGHT_ACTIVE_DELAY][1])
+        }
+        else if ( eLight[LIGHT_FLAGS] & FLAG_ACTIVE_DURATION )
+        {
+            client_print(1, print_chat, "Setting duration...")
+            eLight[LIGHT_NEXT_INACTIVE] = get_gametime() + random_float(eLight[LIGHT_ACTIVE_DURATION][0], eLight[LIGHT_ACTIVE_DURATION][1])
+        }
+    }
+}
+
 stock lightSetState(eLight[LIGHT])
 {
     if ( eLight[LIGHT_FLAGS] & FLAG_COLOR_RANDOM )
@@ -1602,15 +1694,11 @@ stock lightSelect(eLight[LIGHT], iAction)
     set_ent_rendering(eLight[LIGHT_ID], iRenderFx, iRenderColor[0], iRenderColor[1], iRenderColor[2], iRender, iRenderAmt)
 }
 
-stock lightReset()
+stock lightReset(eLight[LIGHT])
 {
-    new eLight[LIGHT]
-    for ( new i = 0; i < g_iLight; i ++ )
-    {
-        ArrayGetArray(g_aLight, i, eLight)
-        eLight[LIGHT_NEXT_RANDOM] = 0.0
-        ArraySetArray(g_aLight, i, eLight)
-    }
+    eLight[LIGHT_NEXT_RANDOM] = 0.0
+    eLight[LIGHT_NEXT_ACTIVE] = 0.0
+    eLight[LIGHT_NEXT_INACTIVE] = 0.0
 }
 
 stock lightSound(iEnt, iSound, bool:bPlayer = true)
@@ -1628,8 +1716,6 @@ stock lightSound(iEnt, iSound, bool:bPlayer = true)
     else
         engfunc(EngFunc_EmitSound, iEnt, CHAN_ITEM, szSample, VOL_NORM, ATTN_NORM, 0, PITCH_NORM)
 }
-
-
 
 stock lightGet(eLight[LIGHT], iEnt)
 {
@@ -1649,7 +1735,7 @@ stock bool:isLight(iEnt)
 
 stock lightKill(iEnt)
 {
-    if (pev_valid(iEnt))
+    if  (pev_valid(iEnt) )
         set_pev(iEnt, pev_flags, pev(iEnt, pev_flags) | FL_KILLME)
 }
 
