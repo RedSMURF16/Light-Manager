@@ -1516,10 +1516,10 @@ public fwdPreThink(id)
 
             lightTrace(eLight, id)
         }
-        else if ( g_ePlayerData[id][PDATA_LIGHT_ACTION] )
-        {
-            lightCheck(id)
-        }
+    }
+    else if ( g_ePlayerData[id][PDATA_LIGHT_ACTION] )
+    {
+        lightCheck(id)
     }
 
     return HAM_IGNORED
