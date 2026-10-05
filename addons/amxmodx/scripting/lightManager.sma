@@ -920,6 +920,10 @@ public menuHandlerShow(id, menu, item)
         case SHOW_CURRENT:
         {
             eLight[LIGHT_FLAGS] ^= FLAG_SHOW
+            if ( !(eLight[LIGHT_FLAGS] & FLAG_SHOW) )
+                eLight[LIGHT_FLAGS] &= ~FLAG_ACTIVE
+            lightSetState(eLight)
+
             client_print_color(id, id, "%L %L", id, "LIGHT_CHAT_TAG", id, "LIGHT_CHAT_SHOW_CURRENT",
             eLight[LIGHT_NAME], id, eLight[LIGHT_FLAGS] & FLAG_SHOW ? "LIGHT_CHAT_SHOWN" : "LIGHT_CHAT_HIDDEN")
             ArraySetArray(g_aLight, g_ePlayerData[id][PDATA_LIGHT_MENU], eLight)
@@ -946,6 +950,9 @@ public menuHandlerShow(id, menu, item)
             {
                 ArrayGetArray(g_aLight, i, eLight)
                 eLight[LIGHT_FLAGS] &= ~FLAG_SHOW
+                eLight[LIGHT_FLAGS] &= ~FLAG_ACTIVE
+                lightSetState(eLight)
+
                 ArraySetArray(g_aLight, i, eLight)
             }
 
