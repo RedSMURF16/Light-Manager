@@ -920,8 +920,6 @@ public menuHandlerShow(id, menu, item)
         case SHOW_CURRENT:
         {
             eLight[LIGHT_FLAGS] ^= FLAG_SHOW
-            if ( !(eLight[LIGHT_FLAGS] & FLAG_SHOW) )
-                eLight[LIGHT_FLAGS] &= ~FLAG_ACTIVE
             lightSetState(eLight)
 
             client_print_color(id, id, "%L %L", id, "LIGHT_CHAT_TAG", id, "LIGHT_CHAT_SHOW_CURRENT",
@@ -950,7 +948,6 @@ public menuHandlerShow(id, menu, item)
             {
                 ArrayGetArray(g_aLight, i, eLight)
                 eLight[LIGHT_FLAGS] &= ~FLAG_SHOW
-                eLight[LIGHT_FLAGS] &= ~FLAG_ACTIVE
                 lightSetState(eLight)
 
                 ArraySetArray(g_aLight, i, eLight)
