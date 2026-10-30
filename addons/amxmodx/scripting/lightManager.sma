@@ -24,9 +24,7 @@
 #include <amxmodx>
 #include <amxmisc>
 #include <cstrike>
-#include <engine>
 #include <fakemeta>
-#include <fun>
 #include <hamsandwich>
 #include <xs>
 
@@ -271,8 +269,6 @@ new Array:g_aLight,
     g_iLight, g_iLightConfig,
     g_iMaxPlayers
 
-new const g_iColorActive[] = { 0, 255, 0 }
-new const g_iColorInactive[] = { 255, 0, 0 }
 new g_szRotateMode[][] = {"LIGHT_ROTATE_PITCH", "LIGHT_ROTATE_YAW", "LIGHT_ROTATE_ROLL"}
 new g_szLightColor[][] = {"LIGHT_COLOR_WHITE", "LIGHT_COLOR_RED", "LIGHT_COLOR_GREEN", "LIGHT_COLOR_BLUE", "LIGHT_COLOR_CYAN", "LIGHT_COLOR_YELLOW", "LIGHT_COLOR_MAGENTA", "LIGHT_COLOR_ORANGE", "LIGHT_COLOR_PURPLE", "LIGHT_COLOR_PINK", "LIGHT_COLOR_AQUA", "LIGHT_COLOR_WARM"}
 new const g_iLightFactor[] = {1, 2, 3, 5, 10}
@@ -617,10 +613,10 @@ public menuRoot(id, iMenu)
 
     menu_addblank2(iMenu)
 
-    formatex(szItem, charsmax(szItem), "%L", id, "LIGHT_ROOT_NOCLIP", id, get_user_noclip(id) ? "LIGHT_ON" : "LIGHT_OFF")
+    formatex(szItem, charsmax(szItem), "%L", id, "LIGHT_ROOT_NOCLIP", id, (pev(id, pev_movetype) == MOVETYPE_NOCLIP) ? "LIGHT_ON" : "LIGHT_OFF")
     menu_additem(iMenu, szItem)
 
-    formatex(szItem, charsmax(szItem), "%L", id, "LIGHT_ROOT_GODMODE", id, get_user_godmode(id) ? "LIGHT_ON" : "LIGHT_OFF")
+    formatex(szItem, charsmax(szItem), "%L", id, "LIGHT_ROOT_GODMODE", id, (pev(id, pev_takedamage) == DAMAGE_NO) ? "LIGHT_ON" : "LIGHT_OFF")
     menu_additem(iMenu, szItem)
 }
 
@@ -1461,7 +1457,7 @@ stock loadDataLight(iItem, iFlags, iScale, iColor[3], Float:fOrigin[3], Float:fA
 
 public lightNoClip(id)
 {
-    set_user_noclip(id, !get_user_noclip(id))
+    set_pev(id, pev_movetype, pev(id, pev_movetype) == MOVETYPE_NOCLIP ? MOVETYPE_WALK : MOVETYPE_NOCLIP)
 
     lightSound(id, SOUND_MENU_NAV)
     lightMenu(id, MENU_ROOT)
@@ -1469,7 +1465,7 @@ public lightNoClip(id)
 
 public lightGodMode(id)
 {
-    set_user_godmode(id, !get_user_godmode(id))
+    set_pev(id, pev_takedamage, pev(id, pev_takedamage) == DAMAGE_NO ? DAMAGE_AIM : DAMAGE_NO)
 
     lightSound(id, SOUND_MENU_NAV)
     lightMenu(id, MENU_ROOT)
@@ -1585,7 +1581,7 @@ stock lightCheck(id)
         fNearest[0] = floatclamp(fVec3[0], fMins[0], fMaxs[0])
         fNearest[1] = floatclamp(fVec3[1], fMins[1], fMaxs[1])
         fNearest[2] = floatclamp(fVec3[2], fMins[2], fMaxs[2])
-        fDist = get_distance_f(fVec3, fNearest)
+        fDist = vector_distance(fVec3, fNearest)
         if ( fDist < fBestDist )
         {
             fBestDist = fDist
@@ -1663,8 +1659,8 @@ stock lightSelect(eLight[LIGHT], iAction)
     iRenderFx = kRenderFxNone
     if ( iAction == TARGET_SELECT )
     {
-        if ( eLight[LIGHT_FLAGS] & FLAG_SHOW )      { iRenderColor[0] = g_iColorActive[0];      iRenderColor[1] = g_iColorActive[1];     iRenderColor[2] = g_iColorActive[2]; }
-        else                                        { iRenderColor[0] = g_iColorInactive[0];    iRenderColor[1] = g_iColorInactive[1];   iRenderColor[2] = g_iColorInactive[2]; }
+        if ( eLight[LIGHT_FLAGS] & FLAG_SHOW )      { iRenderColor[0] = 0;      iRenderColor[1] = 255;     iRenderColor[2] = 0; }
+        else                                        { iRenderColor[0] = 255;    iRenderColor[1] = 0;   iRenderColor[2] = 0; }
 
         iRender = kRenderTransAlpha
         iRenderFx = kRenderFxGlowShell
@@ -1686,7 +1682,7 @@ stock lightSelect(eLight[LIGHT], iAction)
         iRenderAmt = 255
     }
 
-    set_ent_rendering(eLight[LIGHT_ID], iRenderFx, iRenderColor[0], iRenderColor[1], iRenderColor[2], iRender, iRenderAmt)
+    entitySetRendering(eLight[LIGHT_ID], iRenderFx, iRenderColor[0], iRenderColor[1], iRenderColor[2], iRender, iRenderAmt)
 }
 
 stock lightReset(eLight[LIGHT])
@@ -1875,10 +1871,15 @@ stock LogConfigError(const iLine, const szText[], any:...)
 
     log_to_file(ERROR_FILE, "^nLine %d: %s", iLine, szError)
 }
+stock entitySetRendering(iEntity, iRenderFx, iRed, iGreen, iBlue, iRenderMode, iRenderAmt)
+{
+    new Float:fRenderColor[3]
+    fRenderColor[0] = float(iRed)
+    fRenderColor[1] = float(iGreen)
+    fRenderColor[2] = float(iBlue)
 
-
-
-
-
-
-
+    set_pev(iEntity, pev_renderfx, iRenderFx)
+    set_pev(iEntity, pev_rendercolor, fRenderColor)
+    set_pev(iEntity, pev_rendermode, iRenderMode)
+    set_pev(iEntity, pev_renderamt, float(iRenderAmt))
+}
