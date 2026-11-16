@@ -17,6 +17,10 @@ Lights can be placed, managed and configured during gameplay with runtime contro
 - Natural ghost preview for precise light placement
 - Custom light setups are saved per map and automatically loaded on every map start
 
+## 📋 Requirements
+- ReGameDLL
+- AMX Mod X 1.10+
+
 ## 💬 Commands
 - `say /lm` - Opens the Light Manager menu.
 - `say_team /lm` - Opens the Light Manager menu.
