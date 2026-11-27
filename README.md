@@ -1,7 +1,7 @@
 <h1 align="center">Light Manager</h1>
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=fogoxMiPsVo"><img src="https://img.youtube.com/vi/fogoxMiPsVo/maxresdefault.jpg" alt="Watch on YouTube" width="600"></a>
+  <img src="images/demo.gif" alt="Light Manager">
 </p>
 
 ## 📝 Description
